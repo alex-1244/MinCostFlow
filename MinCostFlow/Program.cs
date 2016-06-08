@@ -59,10 +59,8 @@ namespace MinCostFlow
 
                 for (int v = 0; v < Size; v++)
                 {
-                    if (/*IsNotCycle(u,v,parent) &&*/ rGraph[u, v].RemainingFlow > 0)
+                    if (/*IsNotCycle(u,v,parent) &&*/v != s && rGraph[u, v].RemainingFlow > 0)
                     {
-                        if (v == s)
-                            continue;
                         if (parent[v] == null)
                         {
                             parent[v] = new MilestoneHist { pointNum = u, totalCost = parent[u].totalCost + rGraph[u, v].Cost };
