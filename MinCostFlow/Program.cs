@@ -32,48 +32,64 @@ namespace MinCostFlow
             };
 
             Milestone[,] costsMatrix = ConvertToMilestones(costs);
-            CalculateFlow(neededFlow, flows, costs);
+            CalculateFlow(neededFlow, flows, costsMatrix);
         }
 
-        private static flowCostPath CalculateFlow(int neededFlow, int[,] flows, int[,] costs)
+        private static flowCostPath CalculateFlow(int neededFlow, int[,] flows, Milestone[,] costs)
         {
 
 
             return new flowCostPath();
         }
 
-        public static bool bfs(int[,] rGraph, int s, int t, int[] parent)
+        public static MilestoneHist[] bfs(Milestone[,] rGraph, int s, int t)
         {
-            // Create a visited array and mark all vertices as not visited
-            int V = rGraph.GetLength(0) - 1;
-            bool[] visited = new bool[V];
+            int Size = rGraph.GetLength(0) - 1;
+            MilestoneHist[] parent = new MilestoneHist[Size];
+            bool[] visited = new bool[Size];
 
-            // Create a queue, enqueue source vertex and mark source vertex
-            // as visited
             Queue q = new Queue();
             q.Enqueue(s);
-            visited[s] = true;
-            parent[s] = -1;
+            //visited[s] = true;
+            parent[s] = null;
 
-            // Standard BFS Loop
             while (q.Count != 0)
             {
                 int u = (int)q.Dequeue();
 
-                for (int v = 0; v < V; v++)
+                for (int v = 0; v < Size; v++)
                 {
-                    if (visited[v] == false && rGraph[u, v] > 0)
+                    if (/*IsNotCycle(u,v,parent) &&*/ rGraph[u, v].RemainingFlow > 0)
                     {
-                        q.Enqueue(v);
-                        parent[v] = u;
-                        visited[v] = true;
+                        if (v == s)
+                            continue;
+                        if (parent[v] == null)
+                        {
+                            parent[v] = new MilestoneHist { pointNum = u, totalCost = parent[u].totalCost + rGraph[u, v].Cost };
+                            q.Enqueue(v);
+                        }
+                        else
+                        {
+                            int newCost = parent[u].totalCost + rGraph[u, v].Cost;
+                            int oldCost = parent[v].totalCost;
+                            if (newCost < oldCost)
+                            {
+                                parent[v] = new MilestoneHist { pointNum = u, totalCost = parent[u].totalCost + rGraph[u, v].Cost };
+                                q.Enqueue(v);
+                            }
+                        }
                     }
                 }
             }
-
             // If we reached sink in BFS starting from source, then return
             // true, else false
-            return (visited[t] == true);
+            return parent;
+        }
+
+        public static bool IsNotCycle(int from, int to, MilestoneHist[] hist)
+        {
+            //code to determine if "from" is not a descendant of "to"
+            throw new NotImplementedException();
         }
 
         public static Milestone[,] ConvertToMilestones(int[,] costs)
@@ -83,7 +99,7 @@ namespace MinCostFlow
             for (int i = 0; i < size; i++)
                 for (int j = 0; j < size; j++)
                 {
-                    res[i, j] = new Milestone { InitialFlow = costs[i, j] };
+                    res[i, j] = new Milestone { InitialFlow = costs[i, j], RemainingFlow = costs[i, j] };
                 }
             return res;
         }
@@ -98,27 +114,34 @@ namespace MinCostFlow
     class Milestone
     {
         public int InitialFlow { get; set; }
-        public int remainingFlow { get; set; }
-        public int cost { get; set; }
+        public int RemainingFlow { get; set; }
+        public int Cost { get; set; }
         public Milestone prevMilestone { get; set; }
 
         public int getTotalCost()
         {
-            var maxFlow = this.InititalFlow;
+            var maxFlow = this.InitialFlow;
             var totalCost = 0;
             var prevMilestone = this.prevMilestone;
             while (prevMilestone != null)
             {
-                maxFlow = Math.Min(maxFlow, prevMilestone.InititalFlow);
+                maxFlow = Math.Min(maxFlow, prevMilestone.InitialFlow);
                 prevMilestone = prevMilestone.prevMilestone;
             }
             prevMilestone = this.prevMilestone;
             while (prevMilestone != null)
             {
-                totalCost += prevMilestone.cost * maxFlow;
+                totalCost += prevMilestone.Cost * maxFlow;
                 prevMilestone = this.prevMilestone;
             }
             return totalCost;
         }
+    }
+
+    class MilestoneHist
+    {
+        public int pointNum { get; set; }
+        public int totalCost { get; set; }
+
     }
 }
