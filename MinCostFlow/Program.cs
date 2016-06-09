@@ -12,31 +12,17 @@ namespace MinCostFlow
     {
         static void Main(string[] args)
         {
-            //int neededFlow = 2;
-            //int[,] flows = {
-            //    {0,2,0,0,0,0 },
-            //    {0,0,1,0,2,0 },
-            //    {0,0,0,1,0,0 },
-            //    {0,0,0,0,1,0 },
-            //    {0,0,0,0,0,2 },
-            //    {0,0,0,0,0,0 }
-            //};
-            //Array.Copy(flows, 0, flowsCopy, 0, flows.Length);
-            //int[,] costs = {
-            //    {0,1,0,0,0,0 },
-            //    {0,0,1,0,6,0 },
-            //    {0,0,0,1,0,0 },
-            //    {0,0,0,0,1,0 },
-            //    {0,0,0,0,0,1 },
-            //    {0,0,0,0,0,0 }
-            //};
-
-            var data = getData();
+            dataReader data;
+            if (args[0] != null)
+                data = getData(args[0]);
+            else
+                data = getData();
             int[,] flowsCopy = new int[data.flows.GetLength(0), data.flows.GetLength(0)];
             Array.Copy(data.flows, 0, flowsCopy, 0, data.flows.Length);
             FlowCost result = CalculateFlow(data.flows, data.costs, 0, data.flows.GetLength(0) - 1, data.neededFlow);
             var usedFlow = getUsedFlow(flowsCopy, result.resultingFlows);
             writeResult(result.totalCost, usedFlow);
+            Console.ReadKey();
         }
 
         private static void writeResult(int totalCost, int[,] usedFlow, string source = "main")
