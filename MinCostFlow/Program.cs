@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,41 +12,95 @@ namespace MinCostFlow
     {
         static void Main(string[] args)
         {
-            int neededFlow = 2;
-            int[,] flows = {
-                //{0,5,6,0,0,7,0 },
-                //{0,0,5,4,7,8,6 },
-                //{0,0,0,5,5,8,5 },
-                //{0,0,0,0,5,5,5 },
-                //{0,0,0,0,0,6,5 },
-                //{0,0,0,0,0,0,9 },
-                //{0,0,0,0,0,0,0 }
-                {0,2,0,0,0,0 },
-                {0,0,1,0,2,0 },
-                {0,0,0,1,0,0 },
-                {0,0,0,0,1,0 },
-                {0,0,0,0,0,2 },
-                {0,0,0,0,0,0 }
-            };
-            int[,] flowsCopy = new int[flows.GetLength(0), flows.GetLength(0)];
-            Array.Copy(flows, 0, flowsCopy, 0, flows.Length);
-            int[,] costs = {
-                //{0,1,2,0,0,3,0 },
-                //{0,0,5,4,7,8,6 },
-                //{0,0,0,5,4,2,5 },
-                //{0,0,0,0,5,1,5 },
-                //{0,0,0,0,0,1,4 },
-                //{0,0,0,0,0,0,3 },
-                //{0,0,0,0,0,0,0 }
-                {0,1,0,0,0,0 },
-                {0,0,1,0,6,0 },
-                {0,0,0,1,0,0 },
-                {0,0,0,0,1,0 },
-                {0,0,0,0,0,1 },
-                {0,0,0,0,0,0 }
-            };
-            FlowCost result=CalculateFlow(flows,costs, 0, flows.GetLength(0) - 1);
+            //int neededFlow = 2;
+            //int[,] flows = {
+            //    {0,2,0,0,0,0 },
+            //    {0,0,1,0,2,0 },
+            //    {0,0,0,1,0,0 },
+            //    {0,0,0,0,1,0 },
+            //    {0,0,0,0,0,2 },
+            //    {0,0,0,0,0,0 }
+            //};
+            //Array.Copy(flows, 0, flowsCopy, 0, flows.Length);
+            //int[,] costs = {
+            //    {0,1,0,0,0,0 },
+            //    {0,0,1,0,6,0 },
+            //    {0,0,0,1,0,0 },
+            //    {0,0,0,0,1,0 },
+            //    {0,0,0,0,0,1 },
+            //    {0,0,0,0,0,0 }
+            //};
+
+            var data = getData();
+            int[,] flowsCopy = new int[data.flows.GetLength(0), data.flows.GetLength(0)];
+            Array.Copy(data.flows, 0, flowsCopy, 0, data.flows.Length);
+            FlowCost result = CalculateFlow(data.flows, data.costs, 0, data.flows.GetLength(0) - 1);
             var usedFlow = getUsedFlow(flowsCopy, result.resultingFlows);
+        }
+
+        private static dataReader getData(string source="main")
+        {
+            string fullAppName = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string fullAppPath = System.IO.Path.GetDirectoryName(fullAppName);
+            string root = System.IO.Path.GetDirectoryName(fullAppPath);
+            root = System.IO.Path.GetDirectoryName(root);
+            string DataPath = String.Concat(root, "\\Data", "\\" + source + ".csv");
+
+            if (File.Exists(DataPath))
+                return readData(DataPath);
+            else
+                throw new FileNotFoundException(); ;
+        }
+
+        private static dataReader readData(string filePath)
+        {
+            var result = new dataReader();
+            //int[,] flows;
+            //int[,] costs;
+            try
+            {
+                StreamReader sr = new StreamReader(filePath);
+
+                string line;
+
+                line = sr.ReadLine();
+                result.neededFlow = System.Convert.ToInt32(line.Trim(','));
+                line = sr.ReadLine();
+                result.flows = new int[line.Split(',').Length, line.Split(',').Length];
+                result.costs = new int[line.Split(',').Length, line.Split(',').Length];
+                var lineNum = 0;
+                while (line.Length > 2)
+                {
+                    string[] LimitersStr = line.Split(',');
+                    int len = LimitersStr.Length;
+                    for (int i = 0; i < len; i++)
+                    {
+                        result.flows[lineNum, i] = System.Convert.ToInt32(LimitersStr[i]);
+                    }
+                    lineNum++;
+                    line = sr.ReadLine();
+                }
+                lineNum=0;
+                while (sr.Peek() > 0)
+                {
+                    line = sr.ReadLine();
+                    string[] LimitersStr = line.Split(',');
+                    int len = LimitersStr.Length;
+                    for (int i = 0; i < len; i++)
+                    {
+                        result.costs[lineNum, i] = System.Convert.ToInt32(LimitersStr[i]);
+                    }
+                    lineNum++;
+                }                
+                sr.Close();
+                //result.flows = flows;
+                //result.costs = costs;
+                return result;
+            }
+            catch (Exception)
+            {
+                return readData("main");
+            }
         }
 
         private static object getUsedFlow(int[,] flows, int[,] resultingFlows)
@@ -217,5 +272,11 @@ namespace MinCostFlow
     {
         public int totalCost { get; set; }
         public int[,] resultingFlows { get; set; }
+    }
+    class dataReader
+    {
+        public int neededFlow { get; set; }
+        public int[,] flows { get; set; }
+        public int[,] costs { get; set; }
     }
 }
