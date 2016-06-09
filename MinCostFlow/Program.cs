@@ -34,11 +34,11 @@ namespace MinCostFlow
             var data = getData();
             int[,] flowsCopy = new int[data.flows.GetLength(0), data.flows.GetLength(0)];
             Array.Copy(data.flows, 0, flowsCopy, 0, data.flows.Length);
-            FlowCost result = CalculateFlow(data.flows, data.costs, 0, data.flows.GetLength(0) - 1);
+            FlowCost result = CalculateFlow(data.flows, data.costs, 0, data.flows.GetLength(0) - 1, data.neededFlow);
             var usedFlow = getUsedFlow(flowsCopy, result.resultingFlows);
         }
 
-        private static dataReader getData(string source="main")
+        private static dataReader getData(string source = "main")
         {
             string fullAppName = System.Reflection.Assembly.GetExecutingAssembly().Location;
             string fullAppPath = System.IO.Path.GetDirectoryName(fullAppName);
@@ -80,7 +80,7 @@ namespace MinCostFlow
                     lineNum++;
                     line = sr.ReadLine();
                 }
-                lineNum=0;
+                lineNum = 0;
                 while (sr.Peek() > 0)
                 {
                     line = sr.ReadLine();
@@ -91,7 +91,7 @@ namespace MinCostFlow
                         result.costs[lineNum, i] = System.Convert.ToInt32(LimitersStr[i]);
                     }
                     lineNum++;
-                }                
+                }
                 sr.Close();
                 //result.flows = flows;
                 //result.costs = costs;
@@ -115,8 +115,9 @@ namespace MinCostFlow
             return result;
         }
 
-        private static FlowCost CalculateFlow(int[,] flows, int[,] costs, int s, int t)
+        private static FlowCost CalculateFlow(int[,] flows, int[,] costs, int s, int t, int neededFlow)
         {
+            var totalFlow = 0;
             var totalCost = 0;
             if (s == t)
                 throw new ArgumentException("input and output should be different points");
@@ -124,9 +125,19 @@ namespace MinCostFlow
             while (path[t] != null)
             {
                 int maxFlow = getMaxFlowForPath(flows, path, s, t);
+                if (neededFlow - totalFlow < maxFlow)
+                {
+                    maxFlow = neededFlow - totalFlow;
+                    flows = updateFlows(maxFlow, flows, path, s, t);
+                    totalCost += maxFlow * path[t].totalCost;
+                    path = bfs(flows, costs, s, t);
+                    totalFlow += maxFlow;
+                    return new FlowCost { totalCost = totalCost, resultingFlows = flows };
+                }
                 flows = updateFlows(maxFlow, flows, path, s, t);
                 totalCost += maxFlow * path[t].totalCost;
                 path = bfs(flows, costs, s, t);
+                totalFlow += maxFlow;
             }
             return new FlowCost { totalCost = totalCost, resultingFlows = flows };
         }
@@ -205,12 +216,6 @@ namespace MinCostFlow
             return parent;
         }
 
-        public static bool IsNotCycle(int from, int to, MilestoneHist[] hist)
-        {
-            //code to determine if "from" is not a descendant of "to"
-            throw new NotImplementedException();
-        }
-
         public static Milestone[,] ConvertToMilestones(int[,] costs)
         {
             int size = costs.GetLength(0);
@@ -270,6 +275,7 @@ namespace MinCostFlow
 
     class FlowCost
     {
+        public int totalFlow { get; set; }
         public int totalCost { get; set; }
         public int[,] resultingFlows { get; set; }
     }
