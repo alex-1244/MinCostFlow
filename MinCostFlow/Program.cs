@@ -11,68 +11,134 @@ namespace MinCostFlow
     {
         static void Main(string[] args)
         {
-            int neededFlow = 15;
+            int neededFlow = 2;
             int[,] flows = {
-                {0,5,6,0,0,7,0 },
-                {0,0,5,4,7,8,6 },
-                {0,0,0,5,5,8,5 },
-                {0,0,0,0,5,5,5 },
-                {0,0,0,0,0,6,5 },
-                {0,0,0,0,0,0,9 },
-                {0,0,0,0,0,0,0 }
+                //{0,5,6,0,0,7,0 },
+                //{0,0,5,4,7,8,6 },
+                //{0,0,0,5,5,8,5 },
+                //{0,0,0,0,5,5,5 },
+                //{0,0,0,0,0,6,5 },
+                //{0,0,0,0,0,0,9 },
+                //{0,0,0,0,0,0,0 }
+                {0,2,0,0,0,0 },
+                {0,0,1,0,2,0 },
+                {0,0,0,1,0,0 },
+                {0,0,0,0,1,0 },
+                {0,0,0,0,0,2 },
+                {0,0,0,0,0,0 }
             };
+            int[,] flowsCopy = new int[flows.GetLength(0), flows.GetLength(0)];
+            Array.Copy(flows, 0, flowsCopy, 0, flows.Length);
             int[,] costs = {
-                {0,1,2,0,0,3,0 },
-                {0,0,5,4,7,8,6 },
-                {0,0,0,5,4,2,5 },
-                {0,0,0,0,5,1,5 },
-                {0,0,0,0,0,1,4 },
-                {0,0,0,0,0,0,3 },
-                {0,0,0,0,0,0,0 }
+                //{0,1,2,0,0,3,0 },
+                //{0,0,5,4,7,8,6 },
+                //{0,0,0,5,4,2,5 },
+                //{0,0,0,0,5,1,5 },
+                //{0,0,0,0,0,1,4 },
+                //{0,0,0,0,0,0,3 },
+                //{0,0,0,0,0,0,0 }
+                {0,1,0,0,0,0 },
+                {0,0,1,0,6,0 },
+                {0,0,0,1,0,0 },
+                {0,0,0,0,1,0 },
+                {0,0,0,0,0,1 },
+                {0,0,0,0,0,0 }
             };
-
-            Milestone[,] costsMatrix = ConvertToMilestones(costs);
-            CalculateFlow(neededFlow, flows, costsMatrix);
+            FlowCost result=CalculateFlow(flows,costs, 0, flows.GetLength(0) - 1);
+            var usedFlow = getUsedFlow(flowsCopy, result.resultingFlows);
         }
 
-        private static flowCostPath CalculateFlow(int neededFlow, int[,] flows, Milestone[,] costs)
+        private static object getUsedFlow(int[,] flows, int[,] resultingFlows)
         {
-
-
-            return new flowCostPath();
+            var Size = flows.GetLength(0);
+            int[,] result = new int[Size, Size];
+            for (int i = 0; i < Size; i++)
+                for (int j = 0; j < Size; j++)
+                {
+                    result[i, j] = flows[i, j] - resultingFlows[i, j];
+                }
+            return result;
         }
 
-        public static MilestoneHist[] bfs(Milestone[,] rGraph, int s, int t)
+        private static FlowCost CalculateFlow(int[,] flows, int[,] costs, int s, int t)
         {
-            int Size = rGraph.GetLength(0) - 1;
+            var totalCost = 0;
+            if (s == t)
+                throw new ArgumentException("input and output should be different points");
+            MilestoneHist[] path = bfs(flows, costs, s, t);
+            while (path[t] != null)
+            {
+                int maxFlow = getMaxFlowForPath(flows, path, s, t);
+                flows = updateFlows(maxFlow, flows, path, s, t);
+                totalCost += maxFlow * path[t].totalCost;
+                path = bfs(flows, costs, s, t);
+            }
+            return new FlowCost { totalCost = totalCost, resultingFlows = flows };
+        }
+
+        private static int[,] updateFlows(int maxFlow, int[,] flows, MilestoneHist[] path, int s, int t)
+        {
+            int to = t;
+            int from = path[to].pointNum;
+            while (from != -1)
+            {
+                flows[from, to] -= maxFlow;
+                if (flows[from, to] < 0)
+                    throw new Exception("result flow can't be less than 0, some error in logic");
+                to = from;
+                from = path[to].pointNum;
+            }
+            return flows;
+        }
+
+        private static int getMaxFlowForPath(int[,] flows, MilestoneHist[] path, int s, int t)
+        {
+            int to = t;
+            int from = path[to].pointNum;
+            var maxFlow = flows[from, to];
+            while (from != -1)
+            {
+                maxFlow = Math.Min(maxFlow, flows[from, to]);
+                to = from;
+                from = path[to].pointNum;
+            }
+            return maxFlow;
+        }
+
+        public static MilestoneHist[] bfs(int[,] rGraph, int[,] costGraph, int s, int t)
+        {
+            var debug = 0;
+            int Size = rGraph.GetLength(0);
             MilestoneHist[] parent = new MilestoneHist[Size];
+            parent[s] = new MilestoneHist { totalCost = 0, pointNum = -1 };
             bool[] visited = new bool[Size];
 
             Queue q = new Queue();
             q.Enqueue(s);
-            //visited[s] = true;
-            parent[s] = null;
 
             while (q.Count != 0)
             {
                 int u = (int)q.Dequeue();
+                debug++;
+                if (debug > 10000)
+                    throw new StackOverflowException();
 
                 for (int v = 0; v < Size; v++)
                 {
-                    if (/*IsNotCycle(u,v,parent) &&*/v != s && rGraph[u, v].RemainingFlow > 0)
+                    if (v != s && rGraph[u, v] > 0 /*&& IsNotCycle(u,v,parent)*/)
                     {
                         if (parent[v] == null)
                         {
-                            parent[v] = new MilestoneHist { pointNum = u, totalCost = parent[u].totalCost + rGraph[u, v].Cost };
+                            parent[v] = new MilestoneHist { pointNum = u, totalCost = parent[u].totalCost + costGraph[u, v] };
                             q.Enqueue(v);
                         }
                         else
                         {
-                            int newCost = parent[u].totalCost + rGraph[u, v].Cost;
+                            int newCost = parent[u].totalCost + costGraph[u, v];
                             int oldCost = parent[v].totalCost;
                             if (newCost < oldCost)
                             {
-                                parent[v] = new MilestoneHist { pointNum = u, totalCost = parent[u].totalCost + rGraph[u, v].Cost };
+                                parent[v] = new MilestoneHist { pointNum = u, totalCost = newCost };
                                 q.Enqueue(v);
                             }
                         }
@@ -141,5 +207,15 @@ namespace MinCostFlow
         public int pointNum { get; set; }
         public int totalCost { get; set; }
 
+        public static int GetCostByHistory(MilestoneHist[] history)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class FlowCost
+    {
+        public int totalCost { get; set; }
+        public int[,] resultingFlows { get; set; }
     }
 }
