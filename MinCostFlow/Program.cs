@@ -36,6 +36,36 @@ namespace MinCostFlow
             Array.Copy(data.flows, 0, flowsCopy, 0, data.flows.Length);
             FlowCost result = CalculateFlow(data.flows, data.costs, 0, data.flows.GetLength(0) - 1, data.neededFlow);
             var usedFlow = getUsedFlow(flowsCopy, result.resultingFlows);
+            writeResult(result.totalCost, usedFlow);
+        }
+
+        private static void writeResult(int totalCost, int[,] usedFlow, string source = "main")
+        {
+            string fullAppName = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string fullAppPath = System.IO.Path.GetDirectoryName(fullAppName);
+            string root = System.IO.Path.GetDirectoryName(fullAppPath);
+            root = System.IO.Path.GetDirectoryName(root);
+            string DataPath = String.Concat(root, "\\Data", "\\" + source + "_result.csv");
+
+            writeData(DataPath, totalCost, usedFlow);
+        }
+
+        private static void writeData(string dataPath, int totalCost, int[,] usedFlow)
+        {
+            StreamWriter sw = new StreamWriter(dataPath);
+            sw.WriteLine(totalCost);
+            sw.WriteLine("");
+            for (int i = 0; i < usedFlow.GetLength(0); i++)
+            {
+                var line = "";
+                for (int j = 0; j < usedFlow.GetLength(0); j++)
+                {
+                    line += usedFlow[i, j] + ",";
+                }
+                line = line.Trim(',');
+                sw.WriteLine(line);
+            }
+            sw.Close();
         }
 
         private static dataReader getData(string source = "main")
@@ -103,7 +133,7 @@ namespace MinCostFlow
             }
         }
 
-        private static object getUsedFlow(int[,] flows, int[,] resultingFlows)
+        private static int[,] getUsedFlow(int[,] flows, int[,] resultingFlows)
         {
             var Size = flows.GetLength(0);
             int[,] result = new int[Size, Size];
