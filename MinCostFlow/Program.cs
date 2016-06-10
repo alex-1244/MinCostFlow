@@ -13,8 +13,12 @@ namespace MinCostFlow
         static void Main(string[] args)
         {
             dataReader data;
-            if (args[0] != null)
+            string source = "main";
+            if (args.Length > 0)
+            {
+                source = args[0];
                 data = getData(args[0]);
+            }
             else
                 data = getData();
             int[,] flowsCopy = new int[data.flows.GetLength(0), data.flows.GetLength(0)];
@@ -22,6 +26,7 @@ namespace MinCostFlow
             FlowCost result = CalculateFlow(data.flows, data.costs, 0, data.flows.GetLength(0) - 1, data.neededFlow);
             var usedFlow = getUsedFlow(flowsCopy, result.resultingFlows);
             writeResult(result.totalCost, usedFlow);
+            Console.WriteLine($"Application executio finished, press any key to close. Resut could be found in file {source}_result.csv.");
             Console.ReadKey();
         }
 
