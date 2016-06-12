@@ -13,15 +13,28 @@ namespace MinCostFlow
         static void Main(string[] args)
         {
             dataReader data;
-            if (args[0] != null)
-                data = getData(args[0]);
-            else
-                data = getData();
+            string source = "main";
+            try
+            {
+                if (args.Length > 0)
+                {
+                    data = getData(args[0]);
+                    source = args[0];
+                }
+                else
+                    data = getData();
+            }
+            catch (FileNotFoundException Ex)
+            {
+                Console.WriteLine($"File {Ex.FileName} was not found, please make sure file is present and has a propper format");
+                return;
+            }
             int[,] flowsCopy = new int[data.flows.GetLength(0), data.flows.GetLength(0)];
             Array.Copy(data.flows, 0, flowsCopy, 0, data.flows.Length);
             FlowCost result = CalculateFlow(data.flows, data.costs, 0, data.flows.GetLength(0) - 1, data.neededFlow);
             var usedFlow = getUsedFlow(flowsCopy, result.resultingFlows);
-            writeResult(result.totalCost, usedFlow);
+            writeResult(result.totalCost, usedFlow, source);
+            Console.WriteLine($"Result is written to file {source}_result.csv");
             Console.ReadKey();
         }
 
@@ -65,7 +78,7 @@ namespace MinCostFlow
             if (File.Exists(DataPath))
                 return readData(DataPath);
             else
-                throw new FileNotFoundException(); ;
+                throw new FileNotFoundException();
         }
 
         private static dataReader readData(string filePath)
