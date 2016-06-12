@@ -257,12 +257,6 @@ namespace MinCostFlow
             return res;
         }
     }
-    class flowCostPath
-    {
-        int flow;
-        int cost;
-        int[] path;
-    }
 
     class Milestone
     {
