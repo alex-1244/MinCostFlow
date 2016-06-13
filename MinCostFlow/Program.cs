@@ -22,11 +22,12 @@ namespace MinCostFlow
                     source = args[0];
                 }
                 else
-                    data = getData();
+                    data = getData(source);
             }
             catch (FileNotFoundException Ex)
             {
                 Console.WriteLine($"File {Ex.FileName} was not found, please make sure file is present and has a propper format");
+                Console.ReadKey();
                 return;
             }
             int[,] flowsCopy = new int[data.flows.GetLength(0), data.flows.GetLength(0)];
@@ -95,16 +96,17 @@ namespace MinCostFlow
                 line = sr.ReadLine();
                 result.neededFlow = System.Convert.ToInt32(line.Trim(','));
                 line = sr.ReadLine();
-                result.flows = new int[line.Split(',').Length, line.Split(',').Length];
-                result.costs = new int[line.Split(',').Length, line.Split(',').Length];
+                var size = line.Split(',').Length;
+                result.flows = new int[size, size];
+                result.costs = new int[size, size];
                 var lineNum = 0;
                 while (line.Length > 2)
                 {
                     string[] LimitersStr = line.Split(',');
                     int len = LimitersStr.Length;
-                    for (int i = 0; i < len; i++)
+                    for (int i = 0; i < size; i++)
                     {
-                        result.flows[lineNum, i] = System.Convert.ToInt32(LimitersStr[i]);
+                        result.flows[lineNum, i] = Int32.Parse(LimitersStr[i]);
                     }
                     lineNum++;
                     line = sr.ReadLine();
@@ -114,8 +116,8 @@ namespace MinCostFlow
                 {
                     line = sr.ReadLine();
                     string[] LimitersStr = line.Split(',');
-                    int len = LimitersStr.Length;
-                    for (int i = 0; i < len; i++)
+                    //int len = LimitersStr.Length;
+                    for (int i = 0; i < size; i++)
                     {
                         result.costs[lineNum, i] = System.Convert.ToInt32(LimitersStr[i]);
                     }
@@ -126,7 +128,7 @@ namespace MinCostFlow
                 //result.costs = costs;
                 return result;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return readData("main");
             }
@@ -161,14 +163,14 @@ namespace MinCostFlow
                     totalCost += maxFlow * path[t].totalCost;
                     path = bfs(flows, costs, s, t);
                     totalFlow += maxFlow;
-                    return new FlowCost { totalCost = totalCost, resultingFlows = flows };
+                    return new FlowCost { totalCost = totalCost, resultingFlows = flows, totalFlow = totalFlow };
                 }
                 flows = updateFlows(maxFlow, flows, path, s, t);
                 totalCost += maxFlow * path[t].totalCost;
                 path = bfs(flows, costs, s, t);
                 totalFlow += maxFlow;
             }
-            return new FlowCost { totalCost = totalCost, resultingFlows = flows };
+            return new FlowCost { totalCost = totalCost, resultingFlows = flows, totalFlow = totalFlow };
         }
 
         private static int[,] updateFlows(int maxFlow, int[,] flows, MilestoneHist[] path, int s, int t)
@@ -214,9 +216,9 @@ namespace MinCostFlow
             while (q.Count != 0)
             {
                 int u = (int)q.Dequeue();
-                debug++;
-                if (debug > 10000)
-                    throw new StackOverflowException();
+                //debug++;
+                //if (debug > 10000)
+                //    throw new StackOverflowException();
 
                 for (int v = 0; v < Size; v++)
                 {
